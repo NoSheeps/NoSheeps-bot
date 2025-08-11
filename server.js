@@ -42,7 +42,7 @@ client.on('messageCreate', async (message) => {
 
     await message.channel.sendTyping();
 
-    const resp = await fetch(N8N_WEBHOOK_URL, {
+    const resp = await fetch(N8N_WEBHOOK_URL, {https://nosheeps.app.n8n.cloud/webhook/discord/students});
       method: 'POST',
       headers: { 'Content-Type': 'application/json', 'X-Webhook-Secret': N8N_SECRET },
       body: JSON.stringify({
