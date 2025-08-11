@@ -7,14 +7,12 @@ import { Client, GatewayIntentBits, Partials, Events } from 'discord.js';
 const {
   PORT = 3000,
   BOT_TOKEN,
-  CHANNEL_ID,                 // bijv. 1390279105928232991
   N8N_WEBHOOK_URL,
   N8N_SECRET = 'supersecret'
 } = process.env;
 
 // --- Sanity checks ---
 if (!BOT_TOKEN) throw new Error('Missing BOT_TOKEN');
-if (!CHANNEL_ID) throw new Error('Missing CHANNEL_ID');
 
 // --- Mini webserver voor Render keep-alive & status ---
 const app = express();
@@ -41,20 +39,15 @@ client.once(Events.ClientReady, () => {
   console.log(`✅ Logged in as ${client.user.tag}`);
 });
 
-// --- Message handler ---
+// --- Message handler (alle kanalen, alleen bij @mention) ---
 client.on(Events.MessageCreate, async (message) => {
   try {
-    // Basisfilters
-    if (message.author.bot) return;
-    if (!message.inGuild()) return;
-    if (message.channelId !== CHANNEL_ID) return;
+    if (message.author.bot) return;     // negeer bots
+    if (!message.inGuild()) return;     // geen DM's
+    if (!message.mentions.users.has(client.user.id)) return; // alleen bij @mention
 
-    // Alleen doorgaan als de bot is getagd
-    if (!message.mentions.users.has(client.user.id)) return;
-
-    // Payload: 1x het originele bericht + nuttige metadata
     const payload = {
-      message: message.content,
+      message: message.content, // originele tekst, inclusief mention
       author: {
         id: message.author.id,
         username: message.author.username,
@@ -71,14 +64,13 @@ client.on(Events.MessageCreate, async (message) => {
       timestamp: message.createdAt
     };
 
-    console.log(`📥 Mention in #ai-coach door ${message.author.username}: ${message.content}`);
+    console.log(`📥 Mention in #${message.channel?.name || message.channelId} door ${message.author.username}: ${message.content}`);
 
     if (!N8N_WEBHOOK_URL) {
       console.warn('⚠ N8N_WEBHOOK_URL ontbreekt, skip forwarding');
       return;
     }
 
-    // Doorsturen naar n8n
     const resp = await fetch(N8N_WEBHOOK_URL, {
       method: 'POST',
       headers: {
