@@ -61,4 +61,42 @@ client.on(Events.MessageCreate, async (message) => {
         discriminator: message.author.discriminator ?? null
       },
       channel_id: message.channel.id,
-      message
+      message_id: message.id,
+      guild_id: message.guild.id,
+      attachments: [...message.attachments.values()].map(a => ({
+        url: a.url,
+        name: a.name,
+        contentType: a.contentType ?? null
+      })),
+      timestamp: message.createdAt
+    };
+
+    console.log(`📥 Mention in #ai-coach door ${message.author.username}: ${message.content}`);
+
+    if (!N8N_WEBHOOK_URL) {
+      console.warn('⚠ N8N_WEBHOOK_URL ontbreekt, skip forwarding');
+      return;
+    }
+
+    // Doorsturen naar n8n
+    const resp = await fetch(N8N_WEBHOOK_URL, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'X-Webhook-Secret': N8N_SECRET
+      },
+      body: JSON.stringify(payload)
+    });
+
+    if (!resp.ok) {
+      const text = await resp.text().catch(() => '');
+      console.error(`❌ n8n responded ${resp.status}: ${text}`);
+    }
+  } catch (err) {
+    console.error('Handler error:', err);
+    try { await message.react('⚠️'); } catch {}
+  }
+});
+
+// --- Login ---
+client.login(BOT_TOKEN);
