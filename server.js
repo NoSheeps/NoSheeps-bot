@@ -14,7 +14,10 @@ const {
 // --- mini HTTP server voor Render + UptimeRobot ---
 const app = express();
 app.get('/health', (_, res) => res.status(200).json({ ok: true }));
-app.listen(PORT, () => console.log(`HTTP listening on ${PORT}`));
+app.listen(process.env.PORT || 3000, () =>
+  console.log(`HTTP listening on ${process.env.PORT || 3000}`)
+);
+
 
 // --- Discord client ---
 const client = new Client({
